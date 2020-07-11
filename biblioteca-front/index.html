@@ -1,0 +1,142 @@
+<html ng-app="listaLivros"> 
+    <head>
+        <meta charset="UTF-8">
+        <title>::Biblioteca onLine:: - Cadastro de livros - </title>
+        <script src="lib/angular/angular.js"></script>
+        <script src="lib/angular/angular-messages.js"></script>
+        <script src="lib/angular/angular-locale_pt-br.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.11/jquery.mask.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="lib/bootstrap/bootstrap.css">
+        <style>
+            
+            .jumbotron {
+                width: 900px;
+                text-align: center;
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 20px;
+            }
+
+            .table {
+                margin-top: 20px;
+            }
+
+            .form-control {
+                margin-bottom: 10px; 
+            }
+
+            .selecionado {
+                background-color: SandyBrown;
+            }
+
+            .negrito{
+                font-weight: bold;
+            }
+         
+        </style>
+
+        <script>
+            angular.module("listaLivros", ["ngMessages"]);
+            angular.module("listaLivros").controller("listaLivrosCtrl", function ($scope, $http) {
+                $scope.app = "Lista Livros";
+                $scope.livros = [];
+
+                $scope.adicionarLivro = function (livro) {
+                    $http.post("http://localhost:8080/livros", livro).then(function (data) {
+                        delete $scope.livro;
+                        $scope.livroForm.$setPristine();
+                        carregarLivros();    
+                    
+                    });    
+                };
+
+                $scope.ordenarPor = function(campo){
+                    $scope.criterioDeOrdenacao = campo;
+                    $scope.direcaoDaOrdenacao =  !$scope.direcaoDaOrdenacao;
+                };
+
+                var carregarLivros = function () {
+                    $http.get("http://localhost:8080/livros/").then(function(data,status ) {
+                        console.log(data);
+                        $scope.livros = data.data; 
+                    });
+                };
+
+                $scope.isLivroSelecionado = function (livros) {
+                    return livros.some(function (livro) {
+                        return livro.selecionado;
+                    });
+                };
+
+                $scope.apagarLivros = function (livros) {
+
+                        var idDel = null;                        
+                        if(livros.some(function(livro) {
+                            console.log("Passei aqui");
+                            idDel=livro.id;
+                        }));
+
+                        $http.delete("http://localhost:8080/livros/" + idDel).then(function (data,status) {
+                        console.log(data);
+                        carregarLivros();      
+                    }); 
+                }; 
+
+                carregarLivros();      
+
+                $("#publicacao").mask("00/00/0000");
+            });
+
+        </script>
+
+    </head>
+    <body ng-controller="listaLivrosCtrl">
+        <div class="jumbotron">
+            <input class="form-control" type="text" ng-model="criterioDeBusca" placeholder="O que você está buscando?"/>
+            <table class="table table-striped table-dark">
+                <tr>
+                    <th></th>
+                    <th>Livro</th>
+                    <th>Publicação</th>
+                    <th>Editora</th>    
+                    <th>Resumo</th>
+                </tr>
+                <tr ng-class="{'selecionado negrito': livro.selecionado}" ng-repeat="livro in livros | filter:criterioDeBusca">
+                  <td><input type="checkbox" ng-model="livro.selecionado"/></td>  
+                  <td> {{ livro.nome }}</td>
+                  <td> {{ livro.publicacao | date: 'dd/MM/yyyy' }} </td>
+                  <td> {{ livro.editora }}</td>
+                  <td> {{ livro.resumo }}</td>
+                  
+                </tr>
+            </table>
+            <hr/>
+            <form name="livroForm">
+                <input class="form-control" type="text" name="nome" ng-model="livro.nome" placeholder="Nome" ng-required="true" ng-minlength="5"/>
+                <input class="form-control" type="text" name="publicacao" id="publicacao" ng-model="livro.publicacao" placeholder="Data de publicação"/>
+                <input class="form-control" type="text" ng-model="livro.editora" placeholder="editora"/>
+                <input class="form-control" type="text" ng-model="livro.resumo" placeholder="resumo"/>
+                
+
+            </form>
+
+            <!--Início das Validações-->
+            <div ng-messages="livroForm.nome.$error" class="alert alert-danger">
+                <div ng-message="required">
+                    Por favor, preencha o campo nome! 
+                </div>
+                <div ng-message="minlength">
+                    O campo nome deve ter no mínimo 5 caracteres. 
+                </div>
+            </div>
+
+            <!--Final das validações-->
+
+            <button class="btn btn-primary btn-block" ng-click="adicionarLivro(livro)" ng-disabled="livroForm.$invalid">Adicionar Livro</button>
+            <button class="btn btn-danger btn-block"  ng-click="apagarLivros(livros)" ng-if="isLivroSelecionado(livros)">Apagar Livro</button>
+        </div>
+    </body>
+</html>
+    
+    
